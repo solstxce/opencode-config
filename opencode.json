@@ -105,7 +105,7 @@
     },
     "build": {
       "description": "Primary coding agent for implementation work that delegates execution and review",
-      "model": "opencode-go/glm-5.1",
+      "model": "opencode/big-pickle",
       "mode": "all",
       "permission": {
         "external_directory": {
@@ -157,7 +157,7 @@
     },
     "reviewer": {
       "description": "Automated review agent",
-      "model": "opencode-go/deepseek-v4-pro",
+      "model": "opencode/mimo-v2.5-free",
       "variant": "max",
       "mode": "subagent",
       "hidden": true,
