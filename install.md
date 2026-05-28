@@ -22,6 +22,7 @@ opencode.json          # Main config: agents, permissions, models, defaults
 opencode.jsonc         # Minimal override template (used on Windows)
 oc-switch              # CLI toggle script (Linux / macOS / WSL)
 oc-switch.ps1          # CLI toggle script (Windows PowerShell)
+oc-switch.bat          # CLI toggle script (Windows cmd.exe)
 prompts/               # System prompts for each agent
 skills/                # Custom skill definitions (code-review, planning, simplify)
 commands/              # Custom slash commands
@@ -463,8 +464,18 @@ Or just create an alias in your `~/.bashrc` / `~/.zshrc`:
 alias oc-switch='~/.config/opencode/oc-switch'
 ```
 
-**Windows (PowerShell)** — Add the script's folder to your PATH, or create
-a function in your `$PROFILE`:
+**Windows (cmd.exe)** — `oc-switch.bat` runs directly from the command prompt.
+Add its folder to your PATH:
+
+```batch
+rem Run as Administrator
+setx Path "%PATH%;%USERPROFILE%\.opencode"
+```
+
+After that, `oc-switch` works from any cmd.exe window.
+
+**Windows (PowerShell)** — Use `oc-switch.ps1`. Add the script's folder to
+your PATH, or create a function in your `$PROFILE`:
 
 ```powershell
 # Option A — Add to PATH (run as Administrator)
