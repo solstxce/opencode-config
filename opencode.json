@@ -81,7 +81,7 @@
     }
   },
   "model": "opencode/deepseek-v4-flash-free",
-  "default_agent": "build",
+  "default_agent": "general",
   "experimental": {
     "disable_paste_summary": true
   },
@@ -95,18 +95,18 @@
   },
   "agent": {
     "general": {
-      "description": "General-purpose subagent for research, multi-step tasks, and handoffs from primary agents",
+      "description": "Cheap primary orchestrator for normal use, planning handoff, and final review handoff",
       "model": "opencode/deepseek-v4-flash-free",
-      "mode": "subagent",
+      "mode": "primary",
       "permission": {
         "task": "allow"
       },
       "prompt": "{file:./prompts/general-guideline.md}"
     },
     "build": {
-      "description": "Primary coding agent for implementation work, execution delegation, and review handoff",
+      "description": "Primary coding agent for implementation work that delegates execution and review",
       "model": "opencode-go/glm-5.1",
-      "mode": "primary",
+      "mode": "all",
       "permission": {
         "external_directory": {
           "/tmp": "allow",
@@ -117,10 +117,11 @@
       "prompt": "{file:./prompts/coding-guideline.md}"
     },
     "plan": {
-      "description": "Primary planning agent for structured analysis and implementation plans without broad edits",
-      "model": "github-copilot/gpt-5.4",
+      "description": "Structured implementation planning with task analysis and breakdown",
+      "model": "openai/gpt-5.5",
       "variant": "high",
-      "mode": "primary",
+      "mode": "subagent",
+      "hidden": true,
       "permission": {
         "edit": {
           "*": "deny",
@@ -131,8 +132,8 @@
       "prompt": "{file:./prompts/plan-guideline.md}"
     },
     "explore": {
-      "description": "Read-only subagent for fast codebase exploration, file search, and code questions",
-      "model": "opencode-go/deepseek-v4-flash",
+      "description": "Fast read-only codebase exploration and file search",
+      "model": "opencode/deepseek-v4-flash-free",
       "mode": "subagent",
       "permission": {
         "edit": "deny",
@@ -141,8 +142,8 @@
       "prompt": "{file:./prompts/explore-guideline.md}"
     },
     "executor": {
-      "description": "Runs bash commands, tests, builds, and validation when a primary agent delegates execution",
-      "model": "opencode-go/deepseek-v4-flash",
+      "description": "Default execution subagent for bash commands, tests, builds, and validation",
+      "model": "opencode/deepseek-v4-flash-free",
       "mode": "subagent",
       "hidden": true,
       "permission": {
@@ -155,7 +156,7 @@
       "prompt": "{file:./prompts/executor-guideline.md}"
     },
     "reviewer": {
-      "description": "Reviews changed code for bugs and regressions when a primary agent requests feedback",
+      "description": "Automated review agent",
       "model": "opencode-go/deepseek-v4-pro",
       "variant": "max",
       "mode": "subagent",
@@ -170,7 +171,7 @@
       "prompt": "Use code-review skill. Review only the changed scope and write findings to .agents/tasks/review.md."
     },
     "expert-reviewer": {
-      "description": "Performs final in-depth diff reviews with a premium model for high-risk changes",
+      "description": "Performs in-depth diff reviews with a premium model for high-risk changes",
       "model": "openai/gpt-5.5",
       "variant": "high",
       "mode": "subagent",
