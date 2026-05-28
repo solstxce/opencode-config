@@ -9,6 +9,9 @@ global config.
 > installation methods (curl, npm, Homebrew, pacman, Chocolatey, Scoop, Docker).
 >
 > **Repo:** <https://github.com/solstxce/opencode-config/>
+>
+> **First decision:** Decide whether you want the [**Free tier** or **Normal
+> tier**](#choose-your-tier) — the installation steps reference your choice.
 
 ---
 
@@ -17,6 +20,8 @@ global config.
 ```
 opencode.json          # Main config: agents, permissions, models, defaults
 opencode.jsonc         # Minimal override template (used on Windows)
+oc-switch              # CLI toggle script (Linux / macOS / WSL)
+oc-switch.ps1          # CLI toggle script (Windows PowerShell)
 prompts/               # System prompts for each agent
 skills/                # Custom skill definitions (code-review, planning, simplify)
 commands/              # Custom slash commands
@@ -68,6 +73,52 @@ The global `~/.config/opencode/` directory and any `.opencode/` directory use
 
 ---
 
+## Choose your tier
+
+This repo uses **git branches** to switch between tiers. Pick the one that
+fits your setup, then clone / check out the corresponding branch.
+
+| Tier | Branch | Models used | API keys needed |
+|------|--------|-------------|-----------------|
+| **Normal** | `main` | `opencode-go/glm-5.1` (build), `openai/gpt-5.5` (plan & expert-review), `opencode-go/deepseek-v4-pro` (reviewer), `opencode/deepseek-v4-flash-free` (general, explore, executor) | OpenAI, OpenCode Go |
+| **Free** | `free-tier` | `opencode/big-pickle` (build), `openai/gpt-5.5` (plan & expert-review), `opencode/mimo-v2.5-free` (reviewer), `opencode/deepseek-v4-flash-free` (general, explore, executor, small) | OpenAI (plan & review only) |
+
+> **Important:** OpenCode itself is [always free and open source](https://github.com/anomalyco/opencode). The tiers differ only in which third-party LLM models are used for agent tasks.
+
+### Normal tier (`main`)
+
+The full-power config. Requires API keys for OpenAI and OpenCode Go. Use this
+if you already have keys or are willing to set them up.
+
+- **Setup:** Clone the `main` branch — no edits needed.
+- **Keys needed:** OpenAI (`OPENAI_API_KEY`), OpenCode Go (via `/connect`)
+
+### Free tier (`free-tier`)
+
+A lighter config that replaces the two most expensive agent models (`build`
+and `reviewer`) with free alternatives from the `opencode/` provider. Plan
+and expert-reviewer still use `openai/gpt-5.5` (you'll need an OpenAI key for
+those), but day-to-day coding uses free models.
+
+- **Setup:** Clone the `free-tier` branch instead of `main`.
+- **Keys needed:** OpenAI (`OPENAI_API_KEY`) for plan and expert-review agents
+  only.
+
+### Which branch to clone
+
+When you see clone commands in the platform instructions below, append the
+branch name for the tier you chose:
+
+```bash
+# Normal tier
+git clone https://github.com/solstxce/opencode-config.git ~/.config/opencode
+
+# Free tier
+git clone -b free-tier https://github.com/solstxce/opencode-config.git ~/.config/opencode
+```
+
+---
+
 ## Installation by platform
 
 ### Linux
@@ -100,18 +151,30 @@ The global `~/.config/opencode/` directory and any `.opencode/` directory use
    ```
 
    **Option A — Clone (recommended for updates):**
+
+   Choose your tier's branch when cloning:
+
    ```bash
+   # Normal tier
    git clone https://github.com/solstxce/opencode-config.git ~/.config/opencode
+
+   # Free tier
+   git clone -b free-tier https://github.com/solstxce/opencode-config.git ~/.config/opencode
    ```
 
    **Option B — Symlink (keep repo elsewhere, maintain your own copy):**
+
+   First clone to your preferred location with the right branch, then symlink:
    ```bash
-   ln -sf /path/to/your/opencode-config ~/.config/opencode
+   git clone -b <main|free-tier> https://github.com/solstxce/opencode-config.git /path/to/repo
+   ln -sf /path/to/repo ~/.config/opencode
    ```
 
    **Option C — Copy files manually:**
    ```bash
-   cp -r /path/to/your/opencode-config/* ~/.config/opencode/
+   git clone -b <main|free-tier> https://github.com/solstxce/opencode-config.git /tmp/opencode-config
+   cp -r /tmp/opencode-config/* ~/.config/opencode/
+   rm -rf /tmp/opencode-config
    ```
 
 3. **Verify** the config is picked up:
@@ -126,9 +189,11 @@ The global `~/.config/opencode/` directory and any `.opencode/` directory use
 
    If you prefer to keep the config elsewhere (e.g., `~/.opencode/`):
    ```bash
+   # Clone the tier you want
+   git clone -b <main|free-tier> https://github.com/solstxce/opencode-config.git ~/.opencode
    export OPENCODE_CONFIG="$HOME/.opencode/opencode.json"
    ```
-   Add the export to your `~/.bashrc`, `~/.zshrc`, or equivalent.
+   Add the `export` to your `~/.bashrc`, `~/.zshrc`, or equivalent.
 
 ---
 
@@ -157,18 +222,28 @@ The global `~/.config/opencode/` directory and any `.opencode/` directory use
    ```
 
    **Option A — Clone (recommended for updates):**
+
+   Choose your tier's branch when cloning:
+
    ```bash
+   # Normal tier
    git clone https://github.com/solstxce/opencode-config.git ~/.config/opencode
+
+   # Free tier
+   git clone -b free-tier https://github.com/solstxce/opencode-config.git ~/.config/opencode
    ```
 
    **Option B — Symlink:**
    ```bash
-   ln -sf /path/to/your/opencode-config ~/.config/opencode
+   git clone -b <main|free-tier> https://github.com/solstxce/opencode-config.git /path/to/repo
+   ln -sf /path/to/repo ~/.config/opencode
    ```
 
    **Option C — Copy manually:**
    ```bash
-   cp -r /path/to/your/opencode-config/* ~/.config/opencode/
+   git clone -b <main|free-tier> https://github.com/solstxce/opencode-config.git /tmp/opencode-config
+   cp -r /tmp/opencode-config/* ~/.config/opencode/
+   rm -rf /tmp/opencode-config
    ```
 
 3. **Verify:**
@@ -201,17 +276,22 @@ If you already have a `C:\Users\<YOU>\.opencode\opencode.json` file (or want
 to create one), point OpenCode at it via the `OPENCODE_CONFIG` environment
 variable. This keeps your config in your user profile, outside `AppData`.
 
-1. **Clone the repo** into your `.opencode` folder:
+1. **Clone the repo** (choose your tier's branch) into your `.opencode` folder:
 
    ```powershell
    cd "$env:USERPROFILE"
+
+   # Normal tier
    git clone https://github.com/solstxce/opencode-config.git .opencode
+
+   # Free tier
+   git clone -b free-tier https://github.com/solstxce/opencode-config.git .opencode
    ```
 
    > If `.opencode` already exists with your own `opencode.json`, clone into a
    > temp directory and copy files over instead:
    > ```powershell
-   > git clone https://github.com/solstxce/opencode-config.git C:\temp\opencode-config
+   > git clone -b <main|free-tier> https://github.com/solstxce/opencode-config.git C:\temp\opencode-config
    > Copy-Item -Path "C:\temp\opencode-config\*" -Destination "$env:USERPROFILE\.opencode\" -Recurse
    > ```
 
@@ -265,8 +345,8 @@ global config directory (`%APPDATA%\opencode`).
 
    **Using PowerShell:**
    ```powershell
-   # Clone directly
-   git clone https://github.com/solstxce/opencode-config.git "$env:APPDATA\opencode"
+   # Clone directly (choose your tier's branch)
+   git clone -b <main|free-tier> https://github.com/solstxce/opencode-config.git "$env:APPDATA\opencode"
 
    # Or copy from your .opencode folder
    Copy-Item -Path "$env:USERPROFILE\.opencode\*" -Destination "$env:APPDATA\opencode\" -Recurse
@@ -302,7 +382,12 @@ terminal and tooling compatibility.
 
    ```bash
    mkdir -p ~/.config/opencode
+
+   # Normal tier
    git clone https://github.com/solstxce/opencode-config.git ~/.config/opencode
+
+   # Free tier
+   git clone -b free-tier https://github.com/solstxce/opencode-config.git ~/.config/opencode
    ```
 
    Or copy from your Windows `.opencode` folder:
@@ -356,6 +441,67 @@ cd "$env:APPDATA\opencode"      # Windows (native, %APPDATA%)
 cd "$env:USERPROFILE\.opencode" # Windows (custom .opencode dir)
 git pull
 ```
+
+### Switching tiers (oc-switch)
+
+Already on one tier but want to try the other? Use the `oc-switch` command
+included in this repo. It detects your config directory, toggles the branch,
+and shows the current tier — all in one step.
+
+#### Install the command
+
+**Linux / macOS / WSL** — Symlink the script into your PATH:
+
+```bash
+# From inside the cloned config directory
+chmod +x oc-switch
+sudo ln -sf "$PWD/oc-switch" /usr/local/bin/oc-switch
+```
+
+Or just create an alias in your `~/.bashrc` / `~/.zshrc`:
+```bash
+alias oc-switch='~/.config/opencode/oc-switch'
+```
+
+**Windows (PowerShell)** — Add the script's folder to your PATH, or create
+a function in your `$PROFILE`:
+
+```powershell
+# Option A — Add to PATH (run as Administrator)
+[Environment]::SetEnvironmentVariable('Path', "$env:Path;$env:USERPROFILE\.opencode", 'User')
+
+# Option B — Add a function to your PowerShell profile
+Add-Content -Path $PROFILE -Value "`nfunction oc-switch { & `"$env:USERPROFILE\.opencode\oc-switch.ps1`" }"
+```
+
+#### Usage
+
+```bash
+oc-switch
+```
+
+That's it. The script:
+
+1. Finds your config directory (checks `$OPENCODE_CONFIG`, `~/.config/opencode/`,
+   `~/.opencode/`, or the Windows equivalents).
+2. Checks what branch is checked out.
+3. Switches to the opposite branch.
+4. Prints the new tier so you can confirm.
+
+Example output:
+
+```
+🔄  Switching from main → free-tier ...
+Switched to branch 'free-tier'
+
+✅  Now on free-tier — Free tier
+
+    Run `opencode debug config` to verify, then restart OpenCode.
+```
+
+> **Need to see which tier is active without switching?** Just run `oc-switch`
+> — it shows the current branch before toggling. If you change your mind, run
+> it again to switch back.
 
 ### If you symlinked
 

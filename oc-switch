@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+# oc-switch — Toggle OpenCode config between free-tier and normal (main) tier
+#
+# Usage: oc-switch
+#
+# Detects your opencode config directory, checks which branch is checked out,
+# toggles to the other tier, and shows the new state.
+#
+# Supports: Linux, macOS, WSL
+
+set -euo pipefail
+
+# ── Locate the config directory ──────────────────────────────────────────────
+
+find_config_dir() {
+  # 1. OPENCODE_CONFIG env var (may point to a file, take its dirname)
+  if [ -n "${OPENCODE_CONFIG:-}" ]; then
+    dir="$(dirname "$OPENCODE_CONFIG")"
+    if [ -d "$dir/.git" ]; then
+      echo "$dir"
+      return 0
+    fi
+  fi
+
+  # 2. Standard global config directory
+  if [ -d "$HOME/.config/opencode/.git" ]; then
+    echo "$HOME/.config/opencode"
+    return 0
+  fi
+
+  # 3. Common alternative: ~/.opencode/
+  if [ -d "$HOME/.opencode/.git" ]; then
+    echo "$HOME/.opencode"
+    return 0
+  fi
+
+  # 4. WSL: /mnt/c/Users/.../.opencode/
+  if [ -d "/mnt/c/Users" ]; then
+    for userdir in /mnt/c/Users/*; do
+      if [ -d "$userdir/.opencode/.git" ]; then
+        echo "$userdir/.opencode"
+        return 0
+      fi
+    done
+  fi
+
+  echo ""
+}
+
+# ── Main ─────────────────────────────────────────────────────────────────────
+
+CONFIG_DIR="$(find_config_dir)"
+
+if [ -z "$CONFIG_DIR" ]; then
+  printf "❌  Could not find an opencode config directory with a git repo.\n\n"
+  printf "    Looked in:\n"
+  printf "      • \$OPENCODE_CONFIG -> %s\n" "$(dirname "${OPENCODE_CONFIG:-unset}")"
+  printf "      • %s/.config/opencode/\n" "$HOME"
+  printf "      • %s/.opencode/\n" "$HOME"
+  printf "      • /mnt/c/Users/*/.opencode/  (WSL)\n\n"
+  printf "    Make sure you cloned the repo first (see install.md).\n"
+  exit 1
+fi
+
+cd "$CONFIG_DIR"
+
+# Check current branch
+CURRENT="$(git rev-parse --abbrev-ref HEAD)"
+
+case "$CURRENT" in
+  main)
+    NEW="free-tier"
+    LABEL="Free"
+    ;;
+  free-tier)
+    NEW="main"
+    LABEL="Normal"
+    ;;
+  *)
+    printf "❌  Unexpected branch '%s'.\n" "$CURRENT"
+    printf "    Expected 'main' or 'free-tier'.\n"
+    exit 1
+    ;;
+esac
+
+printf "🔄  Switching from \033[1m%s\033[0m → \033[1m%s\033[0m ...\n" "$CURRENT" "$NEW"
+git checkout "$NEW"
+
+printf "\n✅  Now on \033[1m%s\033[0m — \033[1m%s tier\033[0m\n" "$(git rev-parse --abbrev-ref HEAD)" "$LABEL"
+printf "\n    Run \`opencode debug config\` to verify, then restart OpenCode.\n"
