@@ -1,19 +1,30 @@
 #!/usr/bin/env bash
-# oc-switch — Toggle OpenCode config between free-tier and normal (main) tier
+# oc-switch — Switch OpenCode config between tiers (main ↔ free-tier ↔ totally-free-tier)
 #
-# Usage: oc-switch
+# Usage: oc-switch [branch]
 #
-# Detects your opencode config directory, checks which branch is checked out,
-# toggles to the other tier, and shows the new state.
+#   oc-switch              cycle to the next tier in order
+#   oc-switch main         switch to Normal tier
+#   oc-switch free         switch to Free tier
+#   oc-switch totally-free switch to Totally Free tier
+#   oc-switch status       show current tier without switching
 #
 # Supports: Linux, macOS, WSL
 
 set -euo pipefail
 
+# ── Tier map ─────────────────────────────────────────────────────────────────
+
+declare -A TIERS
+TIERS[main]="Normal"
+TIERS[free-tier]="Free"
+TIERS[totally-free-tier]="Totally Free"
+
+CYCLE_ORDER=(main free-tier totally-free-tier)
+
 # ── Locate the config directory ──────────────────────────────────────────────
 
 find_config_dir() {
-  # 1. OPENCODE_CONFIG env var (may point to a file, take its dirname)
   if [ -n "${OPENCODE_CONFIG:-}" ]; then
     dir="$(dirname "$OPENCODE_CONFIG")"
     if [ -d "$dir/.git" ]; then
@@ -22,19 +33,16 @@ find_config_dir() {
     fi
   fi
 
-  # 2. Standard global config directory
   if [ -d "$HOME/.config/opencode/.git" ]; then
     echo "$HOME/.config/opencode"
     return 0
   fi
 
-  # 3. Common alternative: ~/.opencode/
   if [ -d "$HOME/.opencode/.git" ]; then
     echo "$HOME/.opencode"
     return 0
   fi
 
-  # 4. WSL: /mnt/c/Users/.../.opencode/
   if [ -d "/mnt/c/Users" ]; then
     for userdir in /mnt/c/Users/*; do
       if [ -d "$userdir/.opencode/.git" ]; then
@@ -45,6 +53,17 @@ find_config_dir() {
   fi
 
   echo ""
+}
+
+# ── Resolve alias to branch name ─────────────────────────────────────────────
+
+resolve_branch() {
+  case "$1" in
+    main|normal)           echo "main" ;;
+    free|free-tier)        echo "free-tier" ;;
+    totally-free|totally-free-tier|tfree) echo "totally-free-tier" ;;
+    *)                     echo "" ;;
+  esac
 }
 
 # ── Main ─────────────────────────────────────────────────────────────────────
@@ -64,27 +83,61 @@ fi
 
 cd "$CONFIG_DIR"
 
-# Check current branch
 CURRENT="$(git rev-parse --abbrev-ref HEAD)"
 
-case "$CURRENT" in
-  main)
-    NEW="free-tier"
-    LABEL="Free"
-    ;;
-  free-tier)
-    NEW="main"
-    LABEL="Normal"
-    ;;
-  *)
-    printf "❌  Unexpected branch '%s'.\n" "$CURRENT"
-    printf "    Expected 'main' or 'free-tier'.\n"
+# ── Handle explicit argument ─────────────────────────────────────────────────
+
+if [ $# -ge 1 ]; then
+  ARG="$1"
+
+  if [ "$ARG" = "status" ]; then
+    LABEL="${TIERS[$CURRENT]:-$CURRENT}"
+    printf "📋  Current tier: \033[1m%s\033[0m  (\033[1m%s\033[0m branch)\n" "$LABEL" "$CURRENT"
+    exit 0
+  fi
+
+  TARGET="$(resolve_branch "$ARG")"
+  if [ -z "$TARGET" ]; then
+    printf "❌  Unknown tier '%s'.\n" "$ARG"
+    printf "    Valid: main, free, totally-free, status\n"
     exit 1
-    ;;
-esac
+  fi
+
+  if [ "$CURRENT" = "$TARGET" ]; then
+    printf "📋  Already on \033[1m%s\033[0m (\033[1m%s tier\033[0m).\n" "$CURRENT" "${TIERS[$TARGET]}"
+    exit 0
+  fi
+
+  printf "🔄  Switching from \033[1m%s\033[0m → \033[1m%s\033[0m ...\n" "$CURRENT" "$TARGET"
+  git checkout "$TARGET"
+  printf "\n✅  Now on \033[1m%s\033[0m — \033[1m%s tier\033[0m\n" "$TARGET" "${TIERS[$TARGET]}"
+  printf "\n    Run \`opencode debug config\` to verify, then restart OpenCode.\n"
+  exit 0
+fi
+
+# ── No argument — cycle to the next tier ────────────────────────────────────
+
+# Find current position in cycle
+IDX=-1
+for i in "${!CYCLE_ORDER[@]}"; do
+  if [ "${CYCLE_ORDER[$i]}" = "$CURRENT" ]; then
+    IDX=$i
+    break
+  fi
+done
+
+if [ "$IDX" -eq -1 ]; then
+  printf "❌  Unexpected branch '%s'.\n" "$CURRENT"
+  printf "    Expected one of: %s\n" "${CYCLE_ORDER[*]}"
+  exit 1
+fi
+
+NEXT_IDX=$(( (IDX + 1) % ${#CYCLE_ORDER[@]} ))
+NEW="${CYCLE_ORDER[$NEXT_IDX]}"
+LABEL="${TIERS[$NEW]}"
 
 printf "🔄  Switching from \033[1m%s\033[0m → \033[1m%s\033[0m ...\n" "$CURRENT" "$NEW"
 git checkout "$NEW"
 
-printf "\n✅  Now on \033[1m%s\033[0m — \033[1m%s tier\033[0m\n" "$(git rev-parse --abbrev-ref HEAD)" "$LABEL"
+printf "\n✅  Now on \033[1m%s\033[0m — \033[1m%s tier\033[0m\n" "$NEW" "$LABEL"
 printf "\n    Run \`opencode debug config\` to verify, then restart OpenCode.\n"
