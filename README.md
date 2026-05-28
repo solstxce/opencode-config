@@ -25,13 +25,25 @@ Personal configuration and agent definitions for [opencode](https://opencode.ai)
 ```
 You → general (cheap orchestrator)
         │
-        ├── build (mid model, coding)
-        │     ├── explore (cheap, file search)
-        │     ├── executor (cheap, bash/tests)
-        │     ├── reviewer (mid-high, review)
-        │     └── expert-reviewer (premium, deep review)
+        ├── build (big-pickle, coding)
+        │     ├── explore (flash-free, file search)
+        │     ├── executor (flash-free, bash/tests)
+        │     ├── reviewer (mimo-v2.5-free, review)
+        │     └── expert-reviewer (gpt-5.5, deep review)
         │
-        └── plan (premium, task breakdown)
+        └── plan (gpt-5.5, task breakdown)
 ```
 
-Cheap models for orchestration and tool calls, stronger models for coding and deep analysis. Every model has a job.
+### Model map
+
+| Agent | Model | Tier |
+|---|---|---|
+| `general` | opencode/deepseek-v4-flash-free | free |
+| `build` | opencode/big-pickle | free |
+| `plan` | openai/gpt-5.5 | premium |
+| `explore` | opencode/deepseek-v4-flash-free | free |
+| `executor` | opencode/deepseek-v4-flash-free | free |
+| `reviewer` | opencode/mimo-v2.5-free | free |
+| `expert-reviewer` | openai/gpt-5.5 | premium |
+
+All free-tier models, with gpt-5.5 reserved for planning and expert review.
