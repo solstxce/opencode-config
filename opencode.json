@@ -192,7 +192,7 @@
     },
     "explore": {
       "description": "Fast read-only codebase exploration and file search",
-      "model": "opencode-go/ox-alpha-free",
+      "model": "opencode/x-preview-f-free",
       "mode": "subagent",
       "permission": {
         "edit": "deny",
@@ -231,7 +231,7 @@
     },
     "expert-reviewer": {
       "description": "Performs in-depth diff reviews with a premium model for high-risk changes",
-      "model": "opencode-go/ox-alpha-free",
+      "model": "opencode/x-preview-f-free",
       "variant": "max",
       "mode": "subagent",
       "hidden": true,
